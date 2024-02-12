@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package sell;
+
+// The greeting service definition.
+service Sell {
+	// Unary
+	rpc CreateAccount (Seller) returns (UpdateResponse);
+	rpc GetUserID (UserID) returns (Seller);
+	rpc GetSellerRating (UserID) returns (Seller);
+	rpc ItemForSale (Item) returns (UpdateResponse);
+	rpc ChangeSalePrice (ItemPrice) returns (UpdateResponse);
+	rpc RemoveItem (IDPack) returns (UpdateResponse);
+	rpc DisplayItems (UserID) returns (DisplayItemsReply);
+}
+
+
+message UserID {
+    string id = 1;
+}
+
+message Item {
+    string name = 1;
+    int32 category = 2;
+    int32 price = 3;
+    string id = 4;
+    string keywords = 5;
+    int32 cond = 6;
+    int32 quantity = 7;
+    string sellerId = 8;
+}
+
+message ItemPrice {
+    int32 price = 1;
+}
+
+message IDPack {
+    string sellerId = 1;
+    string itemId = 2;
+}
+
+message Seller {
+    string username = 1;
+    string pwd = 2;
+    string id = 3;
+    int32 items = 4;
+    int32 posFb = 5;
+    int32 negFb = 6;
+}
+
+message UpdateResponse {
+    bool error = 1;
+    string msg = 2;
+}
+
+message DisplayItemsReply {
+    repeated Item items = 1;
+}
