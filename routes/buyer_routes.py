@@ -87,7 +87,34 @@ class BuyerRoutes:
             ser_feedbacks.fb.append(buyer_pb2.Feedback(sellerId=f['sellerId'], feedback=f['feedback']))
         reply = self.stub.ProvideFeedback(ser_feedbacks)
         return reply
-                
+
+    def make_purchase_db(self, purchase_req):
+        success = True
+        if success:
+            db_req = buyer_pb2.PurchaseDB(buyerId=purchase_req['buyer_id'], name=purchase_req['name'], cardNo=purchase_req['cardno'], expiry=purchase_req['expiry'])
+            reply = self.stub.MakePurchaseDB(db_req)
+            return reply
+        else:
+            print('Transaction Incomplete')
+            return False
+        
+    def make_purchase_cart(self, cart, purchase_req):
+        #get client to soap service
+        success = True
+        if success:
+            cart_req = buyer_pb2.Cart()
+            cart_req.buyerId = purchase_req['buyer_id']
+            for i in cart.keys():
+                cart_req.ids.append(buyer_pb2.ItemId(id=i))
+            for i in cart.values():
+                cart_req.quantities.append(buyer_pb2.Quantity(q=i))
+            purchase_req = buyer_pb2.PurchaseCart(cart=cart_req, name=purchase_req['name'], cardNo=purchase_req['cardno'], expiry=purchase_req['expiry'])
+            reply = self.stub.MakePurchaseCart(purchase_req)
+            return reply
+        else:
+            print('Transaction Incomplete')
+            return False
+
     def get_history(self, BuyerId): #checked
         pass
  
@@ -116,6 +143,11 @@ if __name__ == '__main__':
     #print(routes.remove_items_cart({"d83cf3aecb5e11eea0e7d5a73ad3607d2": 15, "54f3e2c9cb6111eea788d5a73ad3607d2": 15}, "0977a40ccb7011eeaeecd5a73ad3607d"))
     #print(routes.get_cart("0977a40ccb7011eeaeecd5a73ad3607d"))
     #print(routes.delete_cart("0977a40ccb7011eeaeecd5a73ad3607d"))
+    #print(routes.make_purchase_db({'name':"grpc_Adi", "cardno": "12098he082b", "expiry":"2/14/2024", "buyer_id": "0977a40ccb7011eeaeecd5a73ad3607d",}))
+    print(routes.make_purchase_cart(
+        {"d83cf3aecb5e11eea0e7d5a73ad3607d2": 79, "54f3e2c9cb6111eea788d5a73ad3607d2": 79},
+        {'name':"grpc_Adi", "cardno": "12098he082b", "expiry":"2/14/2024", "buyer_id": "0977a40ccb7011eeaeecd5a73ad3607d",}))
+
     #print(routes.get_purchase_history("0977a40ccb7011eeaeecd5a73ad3607d"))
     '''
     print(routes.provide_feedback([{

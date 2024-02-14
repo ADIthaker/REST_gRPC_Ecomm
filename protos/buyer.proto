@@ -15,6 +15,27 @@ service Buy {
 	rpc DeleteCart (UserID) returns (UpdateResponse);
 	rpc SaveCart (Cart) returns (UpdateResponse);
     rpc ProvideFeedback (Feedbacks) returns (UpdateResponse);
+    rpc MakePurchaseCart (PurchaseCart) returns (UpdateResponse);
+    rpc MakePurchaseDB (PurchaseDB) returns (UpdateResponse);
+    rpc GetHistory(UserID) returns (History);
+}
+
+message PurchaseCart {
+    Cart cart = 1;
+    string name = 2;
+    string cardNo = 3;
+    string expiry = 4;
+}
+
+message PurchaseDB {
+    string buyerId = 1;
+    string name = 2;
+    string cardNo = 3;
+    string expiry = 4;
+}
+
+message History {
+    repeated Cart purchases=1;
 }
 
 message Feedback {

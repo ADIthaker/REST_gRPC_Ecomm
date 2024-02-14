@@ -1,3 +1,5 @@
+from zeep import Client
+
 class BuyerAPIs:
     def __init__(self, cust_db, prod_db):
         self.cust_db = cust_db
@@ -155,26 +157,44 @@ class BuyerAPIs:
     def delete_cart(self, buyerId): #checked
         return self.cust_db.delete_cart(buyerId)
     
-    def make_purchase_from_db(self, buyerID): #checked
-        cart = self.cust_db.get_cart(buyerID)
-        if cart is not None and len(cart)!=0:
-            cart = cart[0]
-            cart_obj = {
-                "buyer_id": cart[1],
-                "products": cart[2]
-            }
-            self.cust_db.delete_cart(buyerID)
-            self.cust_db.create_purchase(cart_obj)
+    def pre_purchase(self, card_details):
+        client = Client('http://localhost:8000/?wsdl')
+        result = client.service.complete_transaction(card_details['name'], card_details['cardno'], card_details['expiry'], 1000)
+        print("GOT RESULT", result)
+        return result
+
+    def post_purchase(self, buyerID, cart):
+        self.cust_db.create_purchase(cart)
+
+    def make_purchase_from_db(self, buyerID, card_details): #checked
+        pur_res = self.pre_purchase(card_details)
+        if pur_res:
+            cart = self.cust_db.get_cart(buyerID)
+            if cart is not None and len(cart)!=0:
+                cart = cart[0]
+                cart_obj = {
+                    "buyer_id": cart[1],
+                    "products": cart[2]
+                }
+                self.cust_db.delete_cart(buyerID)
+                self.post_purchase(buyerID, cart_obj)
+                return True
+            else:
+                print("Cart not found in make_purchase")
+                return None
+        else:
+            return False
+        
+    def make_purchase_from_cart(self, cart, buyerID, card_details): #checked
+        pur_res = self.pre_purchase(card_details)
+        if pur_res:
+            res = self._convert_cart_string(cart)
+            cart["products"] = res
+            cart["buyer_id"] = buyerID
+            self.post_purchase(buyerID, cart)
             return True
         else:
-            print("Cart not found in make_purchase")
-            return None
-        
-    def make_purchase_from_cart(self, cart, buyer_id): #checked
-        res = self._convert_cart_string(cart)
-        cart["products"] = res
-        cart["buyer_id"] = buyer_id
-        self.cust_db.create_purchase(cart) 
+            return False
 
     def get_history(self, BuyerId): #checked
         res = self.cust_db.get_purchases(BuyerId)

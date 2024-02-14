@@ -2,9 +2,9 @@ from spyne import Application, ResourceNotFoundError
 from spyne.protocol.soap import Soap11
 from spyne.server.wsgi import WsgiApplication
 
-from app.controllers import CustomerController, ServiceController
+from controller import TransactionController
 
-application = Application([CustomerController, ServiceController], 'python.soap.example',
+application = Application([TransactionController], 'financial.transaction.xml',
                           in_protocol=Soap11(validator='lxml'),
                           out_protocol=Soap11())
 

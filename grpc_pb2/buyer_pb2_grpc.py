@@ -65,6 +65,21 @@ class BuyStub(object):
                 request_serializer=buyer__pb2.Feedbacks.SerializeToString,
                 response_deserializer=buyer__pb2.UpdateResponse.FromString,
                 )
+        self.MakePurchaseCart = channel.unary_unary(
+                '/buy.Buy/MakePurchaseCart',
+                request_serializer=buyer__pb2.PurchaseCart.SerializeToString,
+                response_deserializer=buyer__pb2.UpdateResponse.FromString,
+                )
+        self.MakePurchaseDB = channel.unary_unary(
+                '/buy.Buy/MakePurchaseDB',
+                request_serializer=buyer__pb2.PurchaseDB.SerializeToString,
+                response_deserializer=buyer__pb2.UpdateResponse.FromString,
+                )
+        self.GetHistory = channel.unary_unary(
+                '/buy.Buy/GetHistory',
+                request_serializer=buyer__pb2.UserID.SerializeToString,
+                response_deserializer=buyer__pb2.History.FromString,
+                )
 
 
 class BuyServicer(object):
@@ -132,6 +147,24 @@ class BuyServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def MakePurchaseCart(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def MakePurchaseDB(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetHistory(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_BuyServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -184,6 +217,21 @@ def add_BuyServicer_to_server(servicer, server):
                     servicer.ProvideFeedback,
                     request_deserializer=buyer__pb2.Feedbacks.FromString,
                     response_serializer=buyer__pb2.UpdateResponse.SerializeToString,
+            ),
+            'MakePurchaseCart': grpc.unary_unary_rpc_method_handler(
+                    servicer.MakePurchaseCart,
+                    request_deserializer=buyer__pb2.PurchaseCart.FromString,
+                    response_serializer=buyer__pb2.UpdateResponse.SerializeToString,
+            ),
+            'MakePurchaseDB': grpc.unary_unary_rpc_method_handler(
+                    servicer.MakePurchaseDB,
+                    request_deserializer=buyer__pb2.PurchaseDB.FromString,
+                    response_serializer=buyer__pb2.UpdateResponse.SerializeToString,
+            ),
+            'GetHistory': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetHistory,
+                    request_deserializer=buyer__pb2.UserID.FromString,
+                    response_serializer=buyer__pb2.History.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -363,5 +411,56 @@ class Buy(object):
         return grpc.experimental.unary_unary(request, target, '/buy.Buy/ProvideFeedback',
             buyer__pb2.Feedbacks.SerializeToString,
             buyer__pb2.UpdateResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MakePurchaseCart(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buy.Buy/MakePurchaseCart',
+            buyer__pb2.PurchaseCart.SerializeToString,
+            buyer__pb2.UpdateResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def MakePurchaseDB(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buy.Buy/MakePurchaseDB',
+            buyer__pb2.PurchaseDB.SerializeToString,
+            buyer__pb2.UpdateResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetHistory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/buy.Buy/GetHistory',
+            buyer__pb2.UserID.SerializeToString,
+            buyer__pb2.History.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -185,6 +185,7 @@ class BuyServicer(buyer_pb2_grpc.BuyServicer):
                 "seller_id": f.sellerId
             })
         api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        
         result = api_handler.provide_feedback(items)
         reply = buyer_pb2.UpdateResponse()
         if result:
@@ -196,6 +197,50 @@ class BuyServicer(buyer_pb2_grpc.BuyServicer):
         del api_handler
         return reply
     
+    def MakePurchaseCart(self, request, context):
+        print("Got a MakePurchaseCart Request")
+        buyer_id = request.cart.buyerId
+        cart = {}
+        for i, q in zip(request.cart.ids, request.cart.quantities):
+            cart[i.id] = q.q
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        card_details = {
+            "expiry": request.expiry,
+            "cardno": request.cardNo,
+            "name": request.name
+        }
+        result = api_handler.make_purchase_from_cart(cart, buyer_id, card_details)
+        reply = buyer_pb2.UpdateResponse()
+        if result:
+            reply.error = False
+            reply.msg = "Cart Bought"
+        else:
+            reply.error = True
+            reply.msg = "Error buying cart"
+        del api_handler
+        return reply
+    
+    def MakePurchaseDB(self, request, context):
+        print("Got a MakePurchaseDB Request")
+        buyer_id = request.buyerId
+        card_details = {
+            "expiry": request.expiry,
+            "cardno": request.cardNo,
+            "name": request.name
+        }
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.make_purchase_from_db(buyer_id, card_details)
+        reply = buyer_pb2.UpdateResponse()
+        if result:
+            reply.error = False
+            reply.msg = "Cart Bought from DB"
+        else:
+            reply.error = True
+            reply.msg = "Error buying cart from DB"
+        del api_handler
+        return reply
+
+
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     buyer_pb2_grpc.add_BuyServicer_to_server(BuyServicer(), server)
