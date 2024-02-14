@@ -1,239 +1,208 @@
 import sys
-sys.path.append('C:\\Users\\athak\\Desktop\\Documents\\CUB\\SEM2\\Distributed Systems\\CSCI5673_Distributed_Systems\\AssignmentOne')
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
 
-# Added the above import cause I was facing ModuleImportError
-import socket
-import threading
-from threading import local
+sys.path.append(os.environ.get("DIR"))
+from concurrent import futures
+import time
+import grpc
+import grpc_pb2.buyer_pb2_grpc as buyer_pb2_grpc
+import grpc_pb2.buyer_pb2 as buyer_pb2
 from apis.buyer_api import BuyerAPIs
 from utils.database import ProductDatabase, CustomerDatabase
 
-HEADER = 64
-PORT = 5053
-SERVER = socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
-FORMAT = 'utf-8'
-DISCONNECT_MSG = '[DISCONNECTED]'
-DELIMITER = '|'
+class BuyServicer(buyer_pb2_grpc.BuyServicer):
+    def CreateAccount(self, request, context):
+        print("Got a CreateAccount Request", request)
+        user = {
+            "name": request.username,
+            "password": request.pwd,
+            "items": request.items,
+        }
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        response = api_handler.create_buyer(user)
+        create_user_reply = buyer_pb2.UpdateResponse()
+        if response is None:
+            create_user_reply.error = True
+            create_user_reply.msg = "Error creating user"
+        else:
+            create_user_reply.error = False
+            create_user_reply.msg = "Buyer created successfully"
+        del api_handler
+        return create_user_reply
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
-
-# Local thread initialization
-thread_local = local()
-
-def get_thread_local_custdb():
-    if not hasattr(thread_local, "cust_db"):
-        thread_local.cust_db = CustomerDatabase()
-    return thread_local.cust_db
-
-def get_thread_local_proddb():
-    if not hasattr(thread_local, "prod_db"):
-        thread_local.prod_db = ProductDatabase()
-    return thread_local.prod_db
-
-def handle_client(conn, addr):
-    print(f'[NEW CONNECTION] {addr} connected.')
-
-    connected = True
-    username = None  # Track the logged-in user
-    UserId = None
-    cart = {}
+    def GetUserID(self, request, context):
+        print("Got a GetUserID Request", request)
+        seller = {
+            "name": request.name,
+            "password": request.password
+        }
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_buyer_id(seller)
+        seller_reply = buyer_pb2.UpdateResponse()
+        print(result)
+        if type(result) is tuple:
+            seller_reply.error = False
+            seller_reply.msg = f'{result[0]}'
+        else:
+            seller_reply.error = True
+            seller_reply.msg = "User can't be logged in"
+        del api_handler
+        return seller_reply
     
-    # Get a thread-local cursor
-    api_handler = BuyerAPIs(get_thread_local_custdb(), get_thread_local_proddb())
+    def GetSellerRating(self, request, context):
+        print("Got a GetSellerRating Request")
+        userId = request.id
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_seller_rating(userId)
+        print("result", result)
+        seller_rating_reply = buyer_pb2.SellerRating()
+        if result is not None:
+            seller_rating_reply.posFb = result[0]+1
+            seller_rating_reply.negFb = result[1]+1
+        del api_handler
+        return seller_rating_reply
 
-    while connected:
-        msg = conn.recv(1024).decode(FORMAT)
+    def GetAvailableItems(self, request, context):
+        print("Got GetAvailableItems request")
+        search =  {
+            "category": request.category,
+            "keywords": request.keywords,
+        }
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_available_items(search)
+        print(result)
+        reply = buyer_pb2.Items()
+        if result is not None:
+            for i in result:
+                print("one item", i)
+                ret_item = buyer_pb2.Item(
+                    name=i[0],
+                    price=i[5],
+                    quantity=i[7],
+                    category=i[1],
+                    id=i[2],
+                    keywords=i[3],
+                    cond=i[4],
+                    sellerId=i[6])
+                reply.items.append(ret_item)
+        del api_handler
+        return reply
+    
+    def AddItems(self, request, context):
+        print("Got AddItems request")
+        buyer_id = request.buyerId
+        cart = {}
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        for i, q in zip(request.ids, request.quantities):
+            cart[i.id] = q.q
+        result = api_handler.add_items_cart(cart, buyer_id)
+        reply = buyer_pb2.UpdateResponse()
+        if result is not None:
+            reply.error = False
+            reply.msg = "Cart Updated with new Items"
+        else:
+            reply.error = True
+            reply.msg = "Error updating cart"
+        del api_handler
+        return reply
 
-        # If the received message is empty, the client has disconnected
-        if not msg:
-            print(f'[CONNECTION CLOSED] {addr} disconnected.')
-            break
+    def RemoveItems(self, request, context):
+        print("Got RemoveItems request")
+        buyer_id = request.buyerId
+        cart = {}
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        for i, q in zip(request.ids, request.quantities):
+            cart[i.id] = q.q
+        result = api_handler.remove_items_cart(cart, buyer_id)
+        reply = buyer_pb2.UpdateResponse()
+        if result is not None:
+            reply.error = False
+            reply.msg = "Cart Updated with new Items"
+        else:
+            reply.error = True
+            reply.msg = "Error updating cart"
+        del api_handler
+        return reply
+    
+    def GetCart(self, request, context):
+        print("Got a GetCart Request")
+        buyer_id = request.id
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_cart(buyer_id)
+        reply = buyer_pb2.Cart()
+        if result is not None:
+            reply.buyerId = result['buyer_id']
+            del result['buyer_id']
+            del result['id']
+            for i in result.keys():
+                reply.ids.append(buyer_pb2.ItemId(id=i))
+            for i in result.values():
+                reply.quantities.append(buyer_pb2.Quantity(q=i))
+        del api_handler
+        return reply
 
-        # Split the received message using the delimiter
-        parts = msg.split(DELIMITER)
-        action = parts[0]
-        print(parts)
-        if action == 'create_account':
-            buyer = create_buyer_account(conn, parts[1], parts[2])
-            api_handler.create_buyer(buyer)
+    def DeleteCart(self, request, context):
+        print("Got a DeleteCart Request")
+        buyer_id = request.id
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.delete_cart(buyer_id)
+        reply = buyer_pb2.UpdateResponse()
+        if result is not None:
+            reply.error = False
+            reply.msg = "Cart deleted"
+        else:
+            reply.error = True
+            reply.msg = "Error deleting cart"
+        del api_handler
+        return reply
 
-        elif action == 'login':
-            buyer = login(conn, parts[1], parts[2])
-            result = api_handler.get_buyer_id(buyer)
-            conn.sendall(str(result[0]).encode(FORMAT))
+    def SaveCart(self, request, context):
+        print("Got a SaveCart Request")
+        buyer_id = request.buyerId
+        cart = {}
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        for i, q in zip(request.ids, request.quantities):
+            cart[i.id] = q.q
+        result = api_handler.save_cart(cart, buyer_id)
+        reply = buyer_pb2.UpdateResponse()
+        if result:
+            reply.error = False
+            reply.msg = "Cart saved"
+        else:
+            reply.error = True
+            reply.msg = "Error saving cart"
+        del api_handler
+        return reply
 
-        # elif action == 'logout':
-        #     print(f'{addr} has disconnected')
-        #     conn.sendall(f'Goodbye {username}!'.encode(FORMAT))
-        #     logout(conn, username)
-        #     username = None
-        #     UserId = None
-        #     connected = False  # Set connected to False to terminate the connection
-        #     return
-        
-        elif action == 'get_seller_rating':
-            pos, neg = api_handler.get_seller_rating(parts[1])
-            conn.sendall(f'Positive Feedbacks: {pos}\nNegative Feedbacks: {neg}'.encode(FORMAT))
-            print(f'Feedbacks sent to {username}')
+    def ProvideFeedback(self, request, context):
+        print("Got a ProvideFeedback Request")
+        items = []
+        for f in request.fb:
+            items.append({
+                "feedback": f.feedback,
+                "seller_id": f.sellerId
+            })
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.provide_feedback(items)
+        reply = buyer_pb2.UpdateResponse()
+        if result:
+            reply.error = False
+            reply.msg = "Feedback sent"
+        else:
+            reply.error = True
+            reply.msg = "Error sending feedback"
+        del api_handler
+        return reply
+    
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    buyer_pb2_grpc.add_BuyServicer_to_server(BuyServicer(), server)
+    server.add_insecure_port("localhost:5053")
+    server.start()
+    print("Server Started")
+    server.wait_for_termination()
 
-        elif action == 'search_item_for_sale':
-            items = search_available_items(conn, parts[1], parts[2])
-            results = api_handler.get_available_items(items)
-            response = ""
-            for result in results:
-                pname = result[0]
-                cat = result[1]
-                pId = result[2]
-                keywords = result[3]
-                if result[4] == 1:
-                    cond = 'NEW'
-                elif result[4] == 0:
-                    cond = 'OLD'
-                else:
-                    continue
-                price = result[5]
-                quantity = result[7]
-                response += f'\n NAME: {pname}, CATEGORY: {cat}, PRODUCT ID: {pId}, KEYWORDS: {keywords}, CONDITION: {cond}, PRICE: {price}, QUANTITY: {quantity}'
-            conn.sendall(response.encode(FORMAT))
-
-        # elif action == 'add_to_cart':
-        #     if UserId:
-        #         cart[parts[1]] = int(parts[2])
-        #         print(cart)
-        #         conn.sendall(f'#{parts[2]} of Item {parts[1]} added to the cart!'.encode(FORMAT))
-        #     else:
-        #         conn.sendall('You are not logged in!'.encode(FORMAT))
-        #         print('User not logged in')
-
-        # elif action == 'remove_item_from_cart':
-        #     if UserId:
-        #         if cart:
-        #             cart.pop(parts[1])
-        #             conn.sendall(f'{parts[1]} removed from the cart successfully'.encode(FORMAT))
-        #         else:
-        #             conn.sendall(f'Cart for current session is empty. Add items and try again!'.encode(FORMAT))
-        #     else:
-        #         conn.sendall('You are not logged in!'.encode(FORMAT))
-        #         print('User not logged in')
-
-        elif action == 'display_items_in_cart': # Show cart
-            result = api_handler.get_cart(parts[1])
-            res = ""
-            if result:
-                for key, values in result.items():
-                    print(f"Displayed saved cart(from db) to {username}")
-                    res += f'\nProduct: {key}, Quantity:{values}'
-                conn.sendall(res.encode(FORMAT))
-            else:
-                print(f"No cart displayed")
-                conn.sendall('Your cart is empty! Consider adding items'.encode(FORMAT))
-                
-        # elif action == 'buy_cart': # TODO
-        #     if UserId:
-        #         if cart:
-        #             cart.pop(parts[1])
-        #             conn.sendall(f'{parts[1]} removed from the cart successfully'.encode(FORMAT))
-        #         else:
-        #             conn.sendall(f'Cart for current session is empty. Add items and try again!'.encode(FORMAT))
-        #     else:
-        #         conn.sendall('You are not logged in!'.encode(FORMAT))
-        #         print('User not logged in')
-
-        # elif action == 'clear_cart':
-        #     if UserId:
-        #         if cart:
-        #             cart.clear()
-        #             conn.sendall(f'Cart emptied!!'.encode(FORMAT))
-        #             print(f"{username} has cleared the unsaved cart!")
-        #         else:
-        #             conn.sendall(f'Cart for current session is empty. Add items and try again!'.encode(FORMAT))
-        #     else:
-        #         conn.sendall('You are not logged in!'.encode(FORMAT))
-        #         print('User not logged in')
-
-        elif action == 'save_cart':
-            if UserId:
-                if cart:
-                    print(cart, UserId)
-                    api_handler.save_cart(cart, UserId)
-                    conn.sendall(f'****{username}\'s cart is saved****\nCurrent cart emptied'.encode(FORMAT))
-                    cart = cart.clear()
-                    print(f"{username}\'s cart is emptied")
-                else:
-                    conn.sendall(f'Cart for current session is empty. Add items and try again!'.encode(FORMAT))
-            else:
-                conn.sendall('You are not logged in!'.encode(FORMAT))
-                print('User not logged in')
-
-        elif action == 'get_purchase_history': # TODO
-            if UserId:
-                sellers = []
-                seller = {}
-                seller['seller_id'] = parts[1]
-                seller['feedback'] = int(parts[2])
-                sellers.append(seller)
-                api_handler.provide_feedback(sellers)
-                conn.sendall('Thank you for providing feedback!'.encode(FORMAT))
-            else:
-                conn.sendall('You are not logged in!'.encode(FORMAT))
-                print('User not logged in')
-
-        elif action == 'provide_feedback':
-            if UserId:
-                sellers = []
-                seller = {}
-                seller['seller_id'] = parts[1]
-                seller['feedback'] = int(parts[2])
-                sellers.append(seller)
-                api_handler.provide_feedback(sellers)
-                conn.sendall('Thank you for providing feedback!'.encode(FORMAT))
-            else:
-                conn.sendall('You are not logged in!'.encode(FORMAT))
-                print('User not logged in')
-
-
-    conn.close()
-
-def create_buyer_account(conn, username, password):
-    buyer = {}
-    buyer['name'] = username
-    buyer['password'] = password
-    buyer['items'] = 0
-    conn.sendall('Account created successfully'.encode(FORMAT))
-    return buyer
-
-def login(conn, username, password):
-    if conn:
-        buyer = {}
-        buyer['name'] = username
-        buyer['password'] = password
-        return buyer
-
-# The logout function remains the same for both buyers and sellers
-def logout(conn, username):
-    if username:
-        conn.sendall(f'Logout successful. Goodbye, {username}!'.encode(FORMAT))
-        print(f"{username} {conn} has disconnected")
-    else:
-        conn.sendall('You are not logged in.'.encode(FORMAT))
-        print(f"{conn} Disconnected!")
-
-def search_available_items(conn, cat, keywords):
-    if conn:
-        items = {}
-        items['cat'] = int(cat)
-        items['keywords'] = keywords
-        return items
-
-def start():
-    server.listen()
-    print(f'Server started and listening on {ADDR}')
-    while True:
-        conn, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f'[ACTIVE CONNECTIONS] {threading.active_count() - 1}')
-
-start()
+if __name__ == "__main__":
+    serve()

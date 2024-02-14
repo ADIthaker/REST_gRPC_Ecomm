@@ -6,17 +6,36 @@ package sell;
 service Sell {
 	// Unary
 	rpc CreateAccount (Seller) returns (UpdateResponse);
-	rpc GetUserID (UserID) returns (Seller);
-	rpc GetSellerRating (UserID) returns (Seller);
+	rpc GetUserID (Login) returns (UpdateResponse);
+	rpc GetSellerRating (UserID) returns (SellerRating);
 	rpc ItemForSale (Item) returns (UpdateResponse);
-	rpc ChangeSalePrice (ItemPrice) returns (UpdateResponse);
-	rpc RemoveItem (IDPack) returns (UpdateResponse);
+	rpc ChangeSalePrice (PriceIDPack) returns (UpdateResponse);
+	rpc RemoveItem (QuantityIDPack) returns (UpdateResponse);
 	rpc DisplayItems (UserID) returns (DisplayItemsReply);
 }
 
 
+message Login {
+    string name = 1;
+    string password = 2;
+}
+
 message UserID {
     string id = 1;
+}
+message PriceIDPack {
+    int32 price = 1;
+    string sellerId = 2;
+    string itemId = 3;
+}
+message QuantityIDPack {
+    int32 quantity = 1;
+    string sellerId = 2;
+    string itemId = 3;
+}
+message SellerRating {
+    int32 posFb = 1;
+    int32 negFb = 2;
 }
 
 message Item {

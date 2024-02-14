@@ -34,9 +34,9 @@ class ProductDatabase:
 
     def create_item(self, item):
         try:
-            Id = uuid.uuid1().hex + str(item['cat'])
+            Id = uuid.uuid1().hex + str(item['category'])
             query = 'INSERT INTO Item (Pname, Category, Id, Keyword, Cond, Price, SellerID, Quantity) VALUES(%s, %s, %s, %s, %s, %s, %s, %s);'
-            vals = (item['name'], item['cat'], Id, item['keywords'], item['condition'], item['price'], item['seller_id'], item['quantity'])
+            vals = (item['name'], item['category'], Id, item['keywords'], item['cond'], item['price'], item['sellerId'], item['quantity'])
             self.cursor.execute(query, vals)
             self.conn.commit()
             return Id
@@ -67,7 +67,7 @@ class ProductDatabase:
     def search_item(self, search):
         try:
             query = "SELECT * FROM Item WHERE Category=%s AND INSTR(Keyword, %s) > 0"
-            self.cursor.execute(query, (search['cat'], search['keywords']))
+            self.cursor.execute(query, (search['category'], search['keywords']))
             result = self.cursor.fetchall()
             return result
         except mysql.connector.Error as error:
@@ -80,8 +80,10 @@ class ProductDatabase:
             val = (item['name'], item['cat'], item['keywords'], item['condition'], item['price'], item['quantity'], item['id'], item['seller_id'])
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to update product in MySQL: {}".format(error))
+            return False
 
     def delete_item(self, Id):
         try:
@@ -89,8 +91,10 @@ class ProductDatabase:
             val = (Id,)
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to delete product in MySQL: {}".format(error))
+            return False
 
     def __del__(self):
         if self.conn.is_connected():
@@ -150,8 +154,10 @@ class CustomerDatabase:
             query = 'INSERT INTO Buyer (Username, Pwd, Items, Id) VALUES(%s, %s, %s, %s);'
             self.cursor.execute(query, (buyer['name'], buyer['password'], buyer['items'], id))
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to insert buyer in MySQL: {}".format(error))
+            return False
 
     def get_buyer_id(self, buyer):
         try:
@@ -192,8 +198,10 @@ class CustomerDatabase:
             val = (buyer['name'], buyer['password'], buyer['items'], id)
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to update buyer in MySQL: {}".format(error))
+            return False
 
     def delete_buyer(self, id):
         try:
@@ -201,8 +209,10 @@ class CustomerDatabase:
             val = (id,)
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to delete buyer in MySQL: {}".format(error))
+            return False
 
     def create_seller(self, seller):
         try:
@@ -211,8 +221,10 @@ class CustomerDatabase:
             vals = (seller['name'], seller['password'], id, seller['items'], seller['PosFb'], seller['NegFb'])
             self.cursor.execute(query, vals)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to insert seller in MySQL: {}".format(error))
+            return False
 
     def get_seller_id(self, seller):
         try:
@@ -242,8 +254,10 @@ class CustomerDatabase:
             vals = (seller['name'], seller['password'], seller['items'],  seller['PosFb'], seller['NegFb'], seller['id'])
             self.cursor.execute(query, vals)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to update seller in MySQL: {}".format(error))
+            return False
 
     def delete_seller(self, id):
         try:
@@ -251,8 +265,10 @@ class CustomerDatabase:
             val = (id,)
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to delete seller in MySQL: {}".format(error))
+            return False
             
     def create_cart(self, cart):
         try:
@@ -261,8 +277,10 @@ class CustomerDatabase:
             vals = (Id, cart['buyer_id'], cart['products'])
             self.cursor.execute(query, vals)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to insert cart in MySQL: {}".format(error))
+            return False
     
     def get_cart(self, Id):
         try:
@@ -281,17 +299,21 @@ class CustomerDatabase:
             vals = (cart['products'], cart['buyer_id'])
             self.cursor.execute(query, vals)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to update cart in MySQL: {}".format(error))
+            return False
     
-    def delete_cart(self, id):
+    def delete_cart(self, buyer_id):
         try:
-            query = "DELETE FROM Cart WHERE Id=%s"
-            val = (id,)
+            query = "DELETE FROM Cart WHERE BuyerID=%s"
+            val = (buyer_id,)
             self.cursor.execute(query, val)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to delete cart in MySQL: {}".format(error))
+            return False
     
     def create_purchase(self, cart):
         try:
@@ -300,8 +322,10 @@ class CustomerDatabase:
             vals = (Id, cart['buyer_id'], cart['products'])
             self.cursor.execute(query, vals)
             self.conn.commit()
+            return True
         except mysql.connector.Error as error:
             print("Failed to insert purchase in MySQL: {}".format(error))
+            return False
     
     def get_purchases(self, buyer_id):
         try:

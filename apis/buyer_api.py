@@ -60,10 +60,11 @@ class BuyerAPIs:
             else:
                 print("Seller not found in provide_feedback")
                 return
-        
+        val = True
         for update in updates:
             print(update)
-            self.cust_db.update_seller(update)
+            val &= self.cust_db.update_seller(update)
+        return val
 
     def _add_cart_items(self, new_items, cart): #checked
         existing_items = self._convert_string_cart(cart)
@@ -94,7 +95,7 @@ class BuyerAPIs:
             updated_cart['products'] = self._convert_cart_string(new_items)
             updated_cart['buyer_id'] = cart[0][1]
             updated_cart['id'] = cart[0][0]
-            self.cust_db.update_cart(updated_cart)
+            return self.cust_db.update_cart(updated_cart)
         else:
             print("Cart not found in add_items_cart")
             return None
@@ -109,7 +110,7 @@ class BuyerAPIs:
             updated_cart['products'] = self._convert_cart_string(new_items)
             updated_cart['buyer_id'] = cart[0][1]
             updated_cart['id'] = cart[0][0]
-            self.cust_db.update_cart(updated_cart)
+            return self.cust_db.update_cart(updated_cart)
         else:
             print("Cart not found in remove_items_cart")
             return None
@@ -149,10 +150,10 @@ class BuyerAPIs:
         res = self._convert_cart_string(cart)
         cart["products"] = res
         cart["buyer_id"] = buyer_id
-        self.cust_db.create_cart(cart)
+        return self.cust_db.create_cart(cart)
     
-    def delete_cart(self, cartId): #checked
-        self.cust_db.delete_cart(cartId)
+    def delete_cart(self, buyerId): #checked
+        return self.cust_db.delete_cart(buyerId)
     
     def make_purchase_from_db(self, buyerID): #checked
         cart = self.cust_db.get_cart(buyerID)

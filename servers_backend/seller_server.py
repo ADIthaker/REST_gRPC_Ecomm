@@ -1,174 +1,153 @@
 import sys
-sys.path.append('C:\\Users\\athak\\Desktop\\Documents\\CUB\\SEM2\\Distributed Systems\\CSCI5673_Distributed_Systems\\AssignmentOne')
-# Added the above import cause I was facing ModuleImportError
-import socket
-import threading
-from threading import local
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+sys.path.append(os.environ.get("DIR"))
+from concurrent import futures
+import time
+import grpc
+import grpc_pb2.seller_pb2_grpc as seller_pb2_grpc
+import grpc_pb2.seller_pb2 as seller_pb2
 from apis.seller_api import SellerAPIs
 from utils.database import ProductDatabase, CustomerDatabase
 
-HEADER = 64
-PORT = 5051
-SERVER = socket.gethostbyname(socket.gethostname())
-ADDR = (SERVER, PORT)
-FORMAT = 'utf-8'
-DISCONNECT_MSG = '[DISCONNECTED]'
-DELIMITER = '|'
+class SellServicer(seller_pb2_grpc.SellServicer):
+    def CreateAccount(self, request, context):
+        print("Got a CreateAccount Request", request)
+        user = {
+            "name": request.username,
+            "password": request.pwd,
+            "items": request.items,
+            "PosFb": request.posFb,
+            "NegFb": request.negFb
+        }
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        response = api_handler.create_seller(user)
+        create_user_reply = seller_pb2.UpdateResponse()
+        if response is None:
+            create_user_reply.error = True
+            create_user_reply.msg = "Error creating user"
+        create_user_reply.error = False
+        create_user_reply.msg = "Seller created successfully"
+        del api_handler
+        return create_user_reply
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
+    def GetUserID(self, request, context):
+        print("Got a GetUserID Request", request)
+        seller = {
+            "name": request.name,
+            "password": request.password
+        }
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_seller_id(seller)
+        seller_reply = seller_pb2.UpdateResponse()
+        print(result)
+        if type(result) is tuple:
+            seller_reply.error = False
+            seller_reply.msg = f'{result[0]}'
+        else:
+            seller_reply.error = True
+            seller_reply.msg = "User can't be logged in"
+        del api_handler
+        return seller_reply
+    
+    def GetSellerRating(self, request, context):
+        print("Got a GetSellerRating Request")
+        userId = request.id
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_seller_rating(userId)
+        print("result", result)
+        seller_rating_reply = seller_pb2.SellerRating()
+        if result is not None:
+            seller_rating_reply.posFb = result[0]+1
+            seller_rating_reply.negFb = result[1]+1
+        del api_handler
+        return seller_rating_reply
 
-# Local thread initialization
-thread_local = local()
+    def ItemForSale(self, request, context):
+        print("Got ItemForSale request")
+        item = {
+        "name": request.name,
+        "price": request.price,
+        "quantity": request.quantity,
+        "category": request.category,
+        "keywords": request.keywords,
+        "cond": request.cond,
+        "sellerId": request.sellerId
+        }
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.put_item_for_sale(item)
+        reply = seller_pb2.UpdateResponse()
+        if result is not None:
+            reply.error = False
+            reply.msg = "Item Created"
+        else:
+            reply.error = True
+            reply.msg = "Error creating item"
+        del api_handler
+        return reply
+    
+    def ChangeSalePrice(self, request, context):
+        print("Got a ChangeSalePrice Request")
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.change_sale_price(request.itemId, request.sellerId , request.price)
+        reply = seller_pb2.UpdateResponse()
+        print(result)
+        if result is not None:
+            reply.error = False
+            reply.msg = "Item Price Updated"
+        else:
+            reply.error = True
+            reply.msg = "Error updating item price"
+        del api_handler
+        return reply
 
-def get_thread_local_custdb():
-    # Function to get or create a thread-local customer database
-    if not hasattr(thread_local, "cust_db"):
-        thread_local.cust_db = CustomerDatabase()
-    return thread_local.cust_db
+    def RemoveItem(self, request, context):
+        print("Got a RemoveItem Request")
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.remove_item(request.itemId, request.sellerId , request.quantity)
+        reply = seller_pb2.UpdateResponse()
+        print(result)
+        if result is not None:
+            reply.error = False
+            reply.msg = "Item Removed"
+        else:
+            reply.error = True
+            reply.msg = "Error removing item"
+        del api_handler
+        return reply
 
-def get_thread_local_proddb():
-    # Function to get or create a thread-local product database
-    if not hasattr(thread_local, "prod_db"):
-        thread_local.prod_db = ProductDatabase()
-    return thread_local.prod_db
+    def DisplayItems(self, request, context):
+        print("Got DisplayItems request")
+        sellerId = request.id
+        api_handler = SellerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.display_items(sellerId)
+        print(result)
+        reply = seller_pb2.DisplayItemsReply()
+        if result is not None:
+            for i in result:
+                print("one item", i)
+                ret_item = seller_pb2.Item(
+                    name=i[0],
+                    price=i[5],
+                    quantity=i[7],
+                    category=i[1],
+                    id=i[2],
+                    keywords=i[3],
+                    cond=i[4],
+                    sellerId=i[6])
+                reply.items.append(ret_item)
+        del api_handler
+        return reply
+    
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    seller_pb2_grpc.add_SellServicer_to_server(SellServicer(), server)
+    server.add_insecure_port("localhost:5051")
+    server.start()
+    print("Server Started")
+    server.wait_for_termination()
 
-def handle_client(conn, addr):
-    print(f'[NEW CONNECTION] {addr} connected.')
-
-    connected = True
-    username = None  # Track the logged-in user
-    UserId = None
-
-    # Get a thread-local cursor
-    api_handler = SellerAPIs(get_thread_local_custdb(), get_thread_local_proddb())
-
-    while connected:
-        msg = conn.recv(1024).decode(FORMAT)
-
-        # If the received message is empty, the client has disconnected
-        if not msg:
-            print(f'[CONNECTION CLOSED] {addr} disconnected.')
-            break
-
-        # Split the received message using the delimiter
-        parts = msg.split(DELIMITER)
-        print(parts)
-        action = parts[0]
-
-        # Handling different actions
-        if action == 'create_account':
-            seller = create_account(conn, parts[1], parts[2])
-            api_handler.create_seller(seller)
-        elif action == 'login':
-            seller = login(conn, parts[1], parts[2])
-            result = api_handler.get_seller_id(seller)
-            conn.sendall(str(result[0]).encode(FORMAT))
-        # elif action == 'logout':
-        #     logout(conn, username)
-        #     username = None
-        #     UserId = None
-        #     connected = False  # Set connected to False to terminate the connection
-        #     return
-        elif action == 'get_seller_rating':
-            res = api_handler.get_seller_rating(parts[1])
-            if res is not None:
-                conn.sendall(f'Positive Feedbacks: {res[0]}\nNegative Feedbacks: {res[1]}'.encode(FORMAT))
-            else:
-                conn.sendall(f'No feedback on user'.encode(FORMAT))
-        elif action == 'put_item_for_sale':
-            item = list_items_for_sale(conn, parts[1], parts[2], parts[3], parts[4], parts[5], parts[6], parts[7])
-            result = api_handler.put_item_for_sale(item)
-            conn.sendall(f'Product: {parts[1]} saved. Quantity: {parts[7]}'.encode(FORMAT))
-            #conn.sendall(result.encode(FORMAT))
-
-        elif action == 'change_sale_price':
-            prodID = parts[1]
-            price = int(parts[2])
-            UserId = parts[3]
-            # print(type(prodID), type(UserId), type(price))
-            remove_item = api_handler.change_sale_price(prodID, UserId, price)
-            if remove_item:
-                conn.sendall(f'New price for {parts[1]}: ${parts[2]}'.encode(FORMAT))
-                print(f"Changes made to {parts[1]}")
-            else:
-                conn.sendall('Failed to edit the price of the item. Provide a valid product id and price'.encode(FORMAT))
-                print("Failed change request.")
-        elif action == 'remove_item_from_sale':
-            prodID = parts[1]
-            prodQuant = int(parts[2])
-            UserId = parts[3]
-            # print(type(prodID), type(UserId), type(prodQuant))
-            remove_item = api_handler.remove_item(prodID, UserId, prodQuant)
-            if remove_item:
-                conn.sendall(f'# {parts[2]} of {parts[1]} removed from the list'.encode(FORMAT))
-                print(f"# {parts[2]} of {parts[1]} removed from database")
-            else:
-                conn.sendall('Failed to remove item. Provide a valid product id and quantity'.encode(FORMAT))
-                print("Failed remove request.")
-
-        elif action == 'display_items_on_sale':
-            items = api_handler.display_items(parts[1]) #UserId
-            result = ""
-            for item in items:
-                pname = item[0]
-                cat = item[1]
-                pId = item[2]
-                keywords = item[3]
-                if item[4] == 1:
-                    cond = 'NEW'
-                elif item[4] == 0:
-                    cond = 'OLD'
-                else:
-                    continue
-                price = item[5]
-                quantity = item[7]
-                result += f'\n NAME: {pname}, CATEGORY: {cat}, PRODUCT ID: {pId}, KEYWORDS: {keywords}, CONDITION: {cond}, PRICE: {price}, QUANTITY: {quantity}'
-            
-            conn.sendall(result.encode(FORMAT))
-            print(f'Items data provided to {username} : {addr}')
-
-    conn.close()
-
-def create_account(conn, username, password):
-    # Function to create a seller account
-    seller = {'name': username, 'password': password, 'items': 0, 'PosFb': 0, 'NegFb': 0}
-    conn.sendall('Account created successfully'.encode(FORMAT))
-    return seller
-
-def login(conn, username, password):
-    # Function to handle seller login
-    if conn:
-        seller = {'name': username, 'password': password}
-        return seller
-
-def logout(conn, username):
-    # Function to handle seller logout
-    if username:
-        conn.sendall(f'Logout successful. Goodbye, {username}!'.encode(FORMAT))
-        print(f"{username} {conn} has disconnected")
-    else:
-        conn.sendall('You are not logged in.'.encode(FORMAT))
-        print(f"{conn} Disconnected!")
-
-def list_items_for_sale(conn, Pname, cat, keywords, cond, sale_price, seller_id, quant):
-    # Function to list items for sale
-    if conn:
-        item = {'name': Pname, 'cat': cat, 'keywords': keywords, 'condition': cond,
-                'price': sale_price, 'seller_id': seller_id, 'quantity': quant}
-        conn.sendall(f'Product: {Pname} saved. Quantity:{quant}!'.encode(FORMAT))
-        return item
-    else:
-        conn.sendall('You are not logged in.'.encode(FORMAT))
-
-def start():
-    # Function to start the server and listen for incoming connections
-    server.listen()
-    print(f'Server started and listening on {ADDR}')
-    while True:
-        conn, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f'\n[ACTIVE CONNECTIONS] {threading.active_count() - 1}')
-
-start()
+if __name__ == "__main__":
+    serve()
