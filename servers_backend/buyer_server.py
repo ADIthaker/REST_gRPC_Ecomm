@@ -240,6 +240,22 @@ class BuyServicer(buyer_pb2_grpc.BuyServicer):
         del api_handler
         return reply
 
+    def GetHistory(self, request, context):
+        print("Got a GetHistory Request")
+        buyerId = request.id
+        api_handler = BuyerAPIs(CustomerDatabase(), ProductDatabase())
+        result = api_handler.get_history(buyerId)
+        reply = buyer_pb2.History()
+        if result is not None:
+            for i in result:
+                ret_item = buyer_pb2.Cart()
+                ret_item.buyerId = buyerId
+                ret_item.ids.extend([buyer_pb2.ItemId(id=x) for x in i.keys()])
+                ret_item.quantities.extend([buyer_pb2.Quantity(q=x) for x in i.values()])
+                reply.purchases.append(ret_item)
+        del api_handler
+        return reply
+
 
 def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
