@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-sys.path.append(os.environ.get("DIR"))
+# sys.path.append(os.environ.get("DIR"))
+sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 from concurrent import futures
 import time
 import grpc
@@ -48,7 +49,7 @@ class SellServicer(seller_pb2_grpc.SellServicer):
             seller_reply.msg = f'{result[0]}'
         else:
             seller_reply.error = True
-            seller_reply.msg = "User can't be logged in"
+            seller_reply.msg = "Invalid username or password"
         del api_handler
         return seller_reply
     
@@ -60,8 +61,9 @@ class SellServicer(seller_pb2_grpc.SellServicer):
         print("result", result)
         seller_rating_reply = seller_pb2.SellerRating()
         if result is not None:
-            seller_rating_reply.posFb = result[0]+1
-            seller_rating_reply.negFb = result[1]+1
+            # no need to add 1 here as all the new accounts do not contain 0 in them
+            seller_rating_reply.posFb = result[0]
+            seller_rating_reply.negFb = result[1]
         del api_handler
         return seller_rating_reply
 

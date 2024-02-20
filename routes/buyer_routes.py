@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-sys.path.append(os.environ.get("DIR"))
+# sys.path.append(os.environ.get("DIR"))
+sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 import grpc_pb2.buyer_pb2_grpc as buyer_pb2_grpc
 import grpc_pb2.buyer_pb2 as buyer_pb2
 import time
@@ -29,8 +30,8 @@ class BuyerRoutes:
         reply = self.stub.GetUserID(getId_request)
         return reply
 
-    def get_seller_rating(self, id): #checked
-        getId_request = buyer_pb2.UserID(id=id)
+    def get_seller_rating(self, Id): #checked
+        getId_request = buyer_pb2.UserID(id=Id)
         reply = self.stub.GetSellerRating(getId_request)
         #grpc does not send values with 0, so reduce the count of both feedback by 1
         return reply
@@ -146,33 +147,33 @@ if __name__ == '__main__':
     #print(routes.get_cart("0977a40ccb7011eeaeecd5a73ad3607d"))
     #print(routes.delete_cart("0977a40ccb7011eeaeecd5a73ad3607d"))
     #print(routes.make_purchase_db({'name':"grpc_Adi", "cardno": "12098he082b", "expiry":"2/14/2024", "buyer_id": "0977a40ccb7011eeaeecd5a73ad3607d",}))
-    '''
-    print(routes.make_purchase_cart(
-        {"d83cf3aecb5e11eea0e7d5a73ad3607d2": 79, "54f3e2c9cb6111eea788d5a73ad3607d2": 79},
-        {'name':"grpc_Adi", "cardno": "12098he082b", "expiry":"2/14/2024", "buyer_id": "0977a40ccb7011eeaeecd5a73ad3607d",}))
-    '''
-    print(routes.get_history("0977a40ccb7011eeaeecd5a73ad3607d"))
-    '''
-    print(routes.provide_feedback([{
-        "name": "grpc_bat",
-        "price": 120,
-        "quantity": 35,
-        "category": 2,
-        "keywords": "cricket",
-        "cond": 1,
-        "sellerId": "9ed08f75cb5911eeba0ad5a73ad3607d",
-        "feedback":1,
-    }, {
-        "name": "grpc_bat",
-        "price": 120,
-        "quantity": 35,
-        "category": 2,
-        "keywords": "cricket",
-        "cond": 1,
-        "sellerId": "9ed08f75cb5911eeba0ad5a73ad3607d",
-        "feedback":0,
-    }]))
-    '''
+    # '''
+    # print(routes.make_purchase_cart(
+    #     {"d83cf3aecb5e11eea0e7d5a73ad3607d2": 79, "54f3e2c9cb6111eea788d5a73ad3607d2": 79},
+    #     {'name':"grpc_Adi", "cardno": "12098he082b", "expiry":"2/14/2024", "buyer_id": "0977a40ccb7011eeaeecd5a73ad3607d",}))
+    # '''
+    # print(routes.get_history("0977a40ccb7011eeaeecd5a73ad3607d"))
+    # '''
+    # print(routes.provide_feedback([{
+    #     "name": "grpc_bat",
+    #     "price": 120,
+    #     "quantity": 35,
+    #     "category": 2,
+    #     "keywords": "cricket",
+    #     "cond": 1,
+    #     "sellerId": "9ed08f75cb5911eeba0ad5a73ad3607d",
+    #     "feedback":1,
+    # }, {
+    #     "name": "grpc_bat",
+    #     "price": 120,
+    #     "quantity": 35,
+    #     "category": 2,
+    #     "keywords": "cricket",
+    #     "cond": 1,
+    #     "sellerId": "9ed08f75cb5911eeba0ad5a73ad3607d",
+    #     "feedback":0,
+    # }]))
+    # '''
     
     
   

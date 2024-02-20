@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-sys.path.append(os.environ.get("DIR"))
+# sys.path.append(os.environ.get("DIR"))
+sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 import grpc_pb2.seller_pb2_grpc as seller_pb2_grpc
 import grpc_pb2.seller_pb2 as seller_pb2
 import time
@@ -20,8 +21,8 @@ class SellerRoutes:
             pwd = seller['password'],
             id = "",
             items = seller["items"],
-            posFb = seller["posFb"],
-            negFb = seller["negFb"]
+            posFb = seller["PosFb"],
+            negFb = seller["NegFb"]
             )
         reply = self.stub.CreateAccount(create_seller_request)
         return reply
@@ -31,8 +32,8 @@ class SellerRoutes:
         reply = self.stub.GetUserID(getId_request)
         return reply
 
-    def get_seller_rating(self, id): #checked
-        getId_request = seller_pb2.UserID(id=id)
+    def get_seller_rating(self, Id): #checked
+        getId_request = seller_pb2.UserID(id=Id)
         reply = self.stub.GetSellerRating(getId_request)
         #grpc does not send values with 0, so reduce the count of both feedback by 1
         return reply
@@ -69,8 +70,8 @@ class SellerRoutes:
         reply = self.stub.RemoveItem(remove_item_req)
         return reply
         
-    def display_items(self, id): #checked
-        display_items_request = seller_pb2.UserID(id = id)
+    def display_items(self, Id): #checked
+        display_items_request = seller_pb2.UserID(id = Id)
         reply = self.stub.DisplayItems(display_items_request)
         return reply
  

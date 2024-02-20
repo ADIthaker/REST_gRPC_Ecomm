@@ -1,164 +1,139 @@
+import requests
+import json
 import socket
-import keyboard
-import time
-from threading import Thread
 
-# Constants
-HEADER = 64
-PORT = 5052
-FORMAT = 'utf-8'
-SERVER = '10.0.0.208'    # '10.203.15.151'
-ADDR = (SERVER, PORT)
-DISCONNECTED_MSG = '[DISCONNECTED]'
-DELIMITER = '|'
-SESSION_TIMEOUT = 300
-ACTIVITY_TIMEOUT = 240
+API_BASE_URL = 'http://10.0.0.148:5002'  # 10.200.194.61
 
-# Socket setup
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+def notify_server():
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+        response = requests.post(f"{API_BASE_URL}", json={'ip': ip})
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
 
-# Global variable to track the last activity time
-last_activity_time = time.time()
+        data = response.json()
 
-# Function to send data to the server
-def send_data(data):
-    message = DELIMITER.join(map(str, data.values()))
-    msg_len = len(message)
-    send_len = str(msg_len).encode(FORMAT)
-    send_len += b' ' * (HEADER - len(send_len))
-    client.send(send_len)
-    client.send(message.encode(FORMAT))
-    response = client.recv(1024).decode(FORMAT)
-    print(response)
+        # Check if the connection was established
+        if data == 'Connection established':
+            print(data)
+        else:
+            print('Connection unsuccessful!')
+    except requests.exceptions.RequestException as e:
+        print(f"Error during server notification: {e}")
 
 # Function to create a new account
 def create_account():
     username = input("Enter username: ")
     password = input("Enter password: ")
-    data = {'action': 'create_account', 'username': username, 'password': password}
-    send_data(data)
+    response = requests.post(f"{API_BASE_URL}/create_account", json={'username': username, 'password': password})
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
 # Function to log in
 def login():
-    global last_activity_time
     username = input("Enter username: ")
     password = input("Enter password: ")
-    data = {'action': 'login', 'username': username, 'password': password}
-    send_data(data)
-    last_activity_time = time.time()
+    response = requests.post(f"{API_BASE_URL}/login", json={'username': username, 'password': password})
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
 # Function to log out
 def logout():
-    data = {'action': 'logout'}
-    send_data(data)
+    response = requests.post(f"{API_BASE_URL}/logout")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
 # Function to get seller rating
 def get_seller_rating():
-    sellerID = input("Enter Seller ID: ")
-    data = {'action': 'get_seller_rating', 'sellerID': sellerID}
-    send_data(data)
+    seller_id = input('Provide seller ID: ')
+    response = requests.get(f"{API_BASE_URL}/get_seller_rating", json=seller_id)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
 # Function to search for items for sale
-def search_item_for_sale():
-    global last_activity_time
-    item_category = input("Enter item category: ")
+def search_available_items():
+    item_category = int(input("Enter item category: "))
     keywords = input("Enter keywords (comma-separated): ").split(',')
-    data = {'action': 'search_item_for_sale', 'item_category': item_category,
-            'keywords': ','.join(keywords)}
-    send_data(data)
-    last_activity_time = time.time()
+    req = {'item_category': item_category, 'keywords': ','.join(keywords)}
+    response = requests.get(f"{API_BASE_URL}/search_available_items", json=req)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    for item in data:
+        print('--------------')
+        print(item)
 
 # Function to add items to the cart
 def add_to_cart():
-    global last_activity_time
     prodID = input('Enter Product ID:')
-    prodQuant = input('Enter Quantity to purchase:')
-    data = {'action': 'add_to_cart', 'prodID': prodID, 'prodQuant': prodQuant}
-    send_data(data)
-    last_activity_time = time.time()
+    prodQuant = int(input('Enter Quantity to purchase:'))
+    cart = {'item_id': prodID, 'quantity': prodQuant}
+    response = requests.post(f"{API_BASE_URL}/add_to_cart", json=cart)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)    
 
 # Function to remove an item from the cart
 def remove_item_from_cart():
-    global last_activity_time
     item_id = input("Enter item ID: ")
-    data = {'action': 'remove_item_from_cart', 'item_id': item_id}
-    send_data(data)
-    last_activity_time = time.time()
-
-# Function to clear the cart
-def clear_cart():
-    global last_activity_time
-    data = {'action': 'clear_cart'}
-    send_data(data)
-    last_activity_time = time.time()
+    response = requests.post(f"{API_BASE_URL}/remove_item_from_cart", json=item_id)
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(type(data)) 
 
 # Function to display items in the cart
 def display_items_in_cart():
-    global last_activity_time
-    data = {'action': 'display_items_in_cart'}
-    send_data(data)
-    last_activity_time = time.time()
-
-# Function to provide feedback
-def provide_feedback():
-    global last_activity_time
-    sellerID = input("Enter sellerID: ")
-    feedback = input("Enter feedback (1/0): ")
-    data = {'action': 'provide_feedback', 'sellerID': sellerID, 'feedback': feedback}
-    send_data(data)
-    last_activity_time = time.time()
-
-# Function to get purchase history
-def get_purchase_history():
-    global last_activity_time
-    data = {'action': 'get_purchase_history'}
-    send_data(data)
-    last_activity_time = time.time()
+    response = requests.get(f"{API_BASE_URL}/display_items_in_cart")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    if type(data) == list:
+        for item in data:
+            print('--------------')
+            print(item)
+    else:
+        print(data)
 
 # Function to buy items in the cart
 def buy_cart():
-    global last_activity_time
-    data = {'action': 'buy_cart'}
-    send_data(data)
-    last_activity_time = time.time()
+    response = requests.post(f"{API_BASE_URL}/buy_cart")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(type(data))
+
+# Function to clear the cart
+def clear_cart():
+    response = requests.delete(f"{API_BASE_URL}/clear_cart")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
 # Function to save the cart
 def save_cart():
-    global last_activity_time
-    data = {'action': 'save_cart'}
-    send_data(data)
-    last_activity_time = time.time()
+    response = requests.post(f"{API_BASE_URL}/save_cart")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
-# Function to check user activity
-def check_user_activity():
-    global last_activity_time
-    while True:
-        if keyboard.is_pressed('Enter'):
-            last_activity_time = time.time()
-        time.sleep(1)
+# Function to get purchase history
+def get_purchase_history():
+    response = requests.get(f"{API_BASE_URL}/get_purchase_history")
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
-# Start the user activity monitoring thread
-activity_thread = Thread(target=check_user_activity)
-activity_thread.daemon = True
-activity_thread.start()
+# Function to provide feedback
+def provide_feedback():
+    sellerID = input("Enter sellerID: ")
+    feedback = int(input("Enter feedback (1/0): "))
+    response = requests.post(f"{API_BASE_URL}/provide_feedback", json={'sellerId': sellerID, 'feedback': feedback})
+    response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
+    data = response.json()
+    print(data)
 
-# Function to check session timeout
-def check_session_timeout():
-    global last_activity_time
-    while True:
-        if time.time() - last_activity_time > ACTIVITY_TIMEOUT:
-            print("No activity for 4 minutes. Session will be terminated in 1 minute.")
-            time.sleep(SESSION_TIMEOUT - ACTIVITY_TIMEOUT)
-            print("Session terminated.")
-            logout()
-            break
-        time.sleep(1)
-
-# Start the session timeout monitoring thread
-timeout_thread = Thread(target=check_session_timeout)
-timeout_thread.daemon = True
-timeout_thread.start()
+# Notify the server of the new client
+notify_server()
 
 # Main interface function
 def interface():
@@ -192,7 +167,7 @@ def interface():
         elif choice == '4':
             get_seller_rating()
         elif choice == '5':
-            search_item_for_sale()
+            search_available_items()
         elif choice == '6':
             add_to_cart()
         elif choice == '7':

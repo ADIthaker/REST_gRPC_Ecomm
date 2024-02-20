@@ -1,4 +1,5 @@
 import sys
+sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
@@ -59,8 +60,9 @@ class BuyServicer(buyer_pb2_grpc.BuyServicer):
         print("result", result)
         seller_rating_reply = buyer_pb2.SellerRating()
         if result is not None:
-            seller_rating_reply.posFb = result[0]+1
-            seller_rating_reply.negFb = result[1]+1
+            # no need to add 1 here as all the new accounts do not contain 0 in them
+            seller_rating_reply.posFb = result[0]
+            seller_rating_reply.negFb = result[1]
         del api_handler
         return seller_rating_reply
 
