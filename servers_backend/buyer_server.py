@@ -1,5 +1,4 @@
 import sys
-sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 import os
 from dotenv import load_dotenv
 load_dotenv(override=True)

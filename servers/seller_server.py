@@ -1,5 +1,10 @@
 import sys
-sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+sys.path.append(os.environ.get("DIR"))
+#sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
 # sys.path.append('C:\\Users\\athak\\Desktop\\Documents\\CUB\\SEM2\\Distributed Systems\\CSCI5673_Distributed_Systems\\AssignmentOne')
 # Added the above import cause I was facing ModuleImportError
 from flask import Flask, request, jsonify
@@ -237,7 +242,7 @@ def rest_display_items_on_sale():
 
 if __name__ == "__main__":
     try:
-        app.run(host='10.0.0.148', port=5001, debug=True)  # 10.200.194.61
+        app.run(host='localhost', port=5001, debug=False)  # 10.200.194.61
     finally:
         # Gracefully terminate the session_timeout_thread
         session_timeout_thread.join()

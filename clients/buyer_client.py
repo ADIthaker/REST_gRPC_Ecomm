@@ -2,7 +2,7 @@ import requests
 import json
 import socket
 
-API_BASE_URL = 'http://10.0.0.148:5002'  # 10.200.194.61
+API_BASE_URL = 'http://localhost:5002'  # 10.200.194.61
 
 def notify_server():
     try:
@@ -97,10 +97,13 @@ def display_items_in_cart():
 
 # Function to buy items in the cart
 def buy_cart():
-    response = requests.post(f"{API_BASE_URL}/buy_cart")
+    cardNo = input("Enter card no: ")
+    expiry = input("Card Expiry")
+    card = {"cardNo": cardNo, "expiry": expiry}
+    response = requests.post(f"{API_BASE_URL}/buy_cart", json=card)
     response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx)
     data = response.json()
-    print(type(data))
+    print(data)
 
 # Function to clear the cart
 def clear_cart():

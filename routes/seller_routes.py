@@ -3,8 +3,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-# sys.path.append(os.environ.get("DIR"))
-sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
+sys.path.append(os.environ.get("DIR"))
 import grpc_pb2.seller_pb2_grpc as seller_pb2_grpc
 import grpc_pb2.seller_pb2 as seller_pb2
 import time

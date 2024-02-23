@@ -1,6 +1,9 @@
 import sys
-sys.path.append('H:/MS/Sem 2/DS/CSCI5673_Distributed_Systems/AssignmentTwo')
-# sys.path.append('C:\\Users\\athak\\Desktop\\Documents\\CUB\\SEM2\\Distributed Systems\\CSCI5673_Distributed_Systems\\AssignmentOne')
+import os
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+sys.path.append(os.environ.get("DIR"))
 # Added the above import cause I was facing ModuleImportError
 from flask import Flask, request, jsonify
 from routes.buyer_routes import BuyerRoutes
@@ -250,16 +253,21 @@ def rest_buy_cart():
     route_handler = BuyerRoutes()
 
     data = request.get_json()
-    print(data)
+    purchase_req = {
+        "cardno": data.get("cardNo"),
+        "expiry":data.get("expiry"),
+        "name": username,
+        "buyer_id": UserID
+    }
     if client[client_address] is not  None:
         if cart:
-            route_handler.make_purchase_cart(cart, UserID)
+            route_handler.make_purchase_cart(cart, purchase_req)
             cart.clear()  # Clear the cart after a successful purchase
             return jsonify('Purchase made successfully')
         else:
             result = route_handler.get_cart(UserID)
             if result:
-                route_handler.make_purchase_db(UserID)
+                route_handler.make_purchase_db(purchase_req)
                 return jsonify('Purchase made successfully')
             else:
                 return jsonify('Your cart is empty! Consider adding items')
@@ -342,7 +350,7 @@ def rest_provide_feedback():
     
 if __name__ == "__main__":
     try:
-        app.run(host='10.0.0.148', port=5002, debug=True)  # 10.200.194.61
+        app.run(host='localhost', port=5002, debug=True)  # 10.200.194.61
     finally:
         # Gracefully terminate the session_timeout_thread
         session_timeout_thread.join()

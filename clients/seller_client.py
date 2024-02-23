@@ -3,7 +3,7 @@ import json
 import socket
 import threading
 
-API_BASE_URL = 'http://10.0.0.148:5001'  # 10.200.194.61
+API_BASE_URL = 'http://localhost:5001'  # 10.200.194.61
 
 def notify_server():
     try:
