@@ -26,3 +26,45 @@ The current state of the application effectively supports all the functionalitie
 4. **Transaction History:** The user's transaction history is not stored as a timeline but rather as a snapshot of the cart when the "make purchase" functionality is invoked.
 
 5. **Search Mechanism:** The buyer's search functionality attempts to match the existence of the exact keyword as a substring in the concatenated string of all keywords associated with a product.
+
+### Features
+
+#### Client-side sellers interface
+- Create an account: sets up username and password
+- Login: provide username and password
+- Logout
+- Get seller rating
+- Put an item for sale: provide all item characteristics and quantity
+- Change the sale price of an item: provide item id and new sale price
+- Remove an item from sale: provide item id and quantity
+- Display items currently on sale put up by this seller
+  
+#### Server-side sellers interface
+- Same as Client-side Sellers interface
+  
+#### Client-side buyers interface
+- Create an account: sets up username and password
+- Login: provide username and password
+- Logout
+- Search items for sale: provide an item category and up to five keywords
+- Add item to the shopping cart: provide item id and quantity
+- Remove item from the shopping cart: provide item id and quantity
+- Save the shopping cart
+- Clear the shopping cart
+- Display shopping cart
+- Make purchase
+- Provide feedback: thumbs up or down for each item purchased, at most one feedback per purchased item
+- Get seller rating: provide seller id
+- Get buyer purchase history
+  
+#### Server-side buyers interface
+Same as Client-side buyers interface
+
+
+### Other 
+
+**Session Timeout**: Clients are logged out automatically if there is no client activity for at least five minutes. Displays a warning message one minute before automatic logout.
+
+**Stateless frontend**: Frontend server components are designed to be stateless. All state is stored in the backend databases (customer and product databases).
+
+**Registration and login**: Avery simple mechanism, e.g. store/transport login name and password in clear text. Allow a buyer or server to login and interact with the server from multiple client machines simultaneously.
