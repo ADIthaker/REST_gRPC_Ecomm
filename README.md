@@ -7,6 +7,8 @@ The system comprises several interconnected components, each serving a specific 
 - **Buyer Server Backend**
 - **Seller Server Backend**
 
+  ![System Architecture](./sys_arch.png)
+
 The server frontends act as intermediaries, receiving requests from clients and establishing connections with the relevant database instances. The database instances consist of the Product Database and Customer Database, each managed by separate server backends. The flow of a typical request follows this sequence:
 
 **Client** ---*REST Request*---> **Server Frontend** ---*gRPC Request + *---> **Target Backend Functionality** ---*MySQL Request*---> **Database Query**
