@@ -67,4 +67,4 @@ Same as Client-side buyers interface
 
 **Stateless frontend**: Frontend server components are designed to be stateless. All state is stored in the backend databases (customer and product databases).
 
-**Registration and login**: Avery simple mechanism, e.g. store/transport login name and password in clear text. Allow a buyer or server to login and interact with the server from multiple client machines simultaneously.
+**Registration and login**: A very simple mechanism, e.g. store/transport login name and password in clear text. Allow a buyer or server to login and interact with the server from multiple client machines simultaneously.
